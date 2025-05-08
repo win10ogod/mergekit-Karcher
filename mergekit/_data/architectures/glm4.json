@@ -1,7 +1,7 @@
 {
-    "model_type": "mistral",
+    "model_type": "glm4",
     "architectures": [
-        "MistralForCausalLM"
+        "Glm4ForCausalLM"
     ],
     "pre_weights": [
         {
@@ -16,6 +16,21 @@
                 "name": "model.layers.${layer_index}.input_layernorm.weight"
             },
             {
+                "name": "model.layers.${layer_index}.mlp.down_proj.weight"
+            },
+            {
+                "name": "model.layers.${layer_index}.mlp.gate_up_proj.weight"
+            },
+            {
+                "name": "model.layers.${layer_index}.post_attention_layernorm.weight"
+            },
+            {
+                "name": "model.layers.${layer_index}.post_mlp_layernorm.weight"
+            },
+            {
+                "name": "model.layers.${layer_index}.post_self_attn_layernorm.weight"
+            },
+            {
                 "name": "model.layers.${layer_index}.self_attn.q_proj.weight"
             },
             {
@@ -26,18 +41,6 @@
             },
             {
                 "name": "model.layers.${layer_index}.self_attn.o_proj.weight"
-            },
-            {
-                "name": "model.layers.${layer_index}.post_attention_layernorm.weight"
-            },
-            {
-                "name": "model.layers.${layer_index}.mlp.up_proj.weight"
-            },
-            {
-                "name": "model.layers.${layer_index}.mlp.gate_proj.weight"
-            },
-            {
-                "name": "model.layers.${layer_index}.mlp.down_proj.weight"
             }
         ]
     },

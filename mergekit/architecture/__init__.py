@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: BUSL-1.1
 
 import logging
+from functools import lru_cache
 from typing import TYPE_CHECKING, Optional
 
 from transformers import PretrainedConfig
@@ -16,13 +17,18 @@ from mergekit.architecture.base import (
     WeightInfo,
 )
 from mergekit.architecture.json_definitions import NAME_TO_ARCH
-from mergekit.architecture.mixtral import MixtralTensorNames
+from mergekit.architecture.moe_defs import (
+    MixtralModuleArchitecture,
+    Qwen3MoeModuleArchitecture,
+)
 from mergekit.options import MergeOptions
 
 if TYPE_CHECKING:
     from mergekit.config import MergeConfiguration
 
-logger = logging.getLogger(__name__)
+LOG = logging.getLogger(__name__)
+
+WARNED_ARCHITECTURE_NAMES = set()
 
 
 def arch_info_for_config(config: PretrainedConfig) -> Optional[ModelArchitecture]:
@@ -30,8 +36,14 @@ def arch_info_for_config(config: PretrainedConfig) -> Optional[ModelArchitecture
         raise RuntimeError("More than one architecture in config?")
     arch_name = config.architectures[0]
 
-    if arch_name == MixtralTensorNames.ARCHITECTURE_NAME:
-        module = MixtralTensorNames.from_config(config)
+    if arch_name == MixtralModuleArchitecture.ARCHITECTURE_NAME:
+        module = MixtralModuleArchitecture.from_config(config)
+        return ModelArchitecture(
+            modules={"default": ModuleDefinition(architecture=module)},
+            architectures=[arch_name],
+        )
+    elif arch_name == Qwen3MoeModuleArchitecture.ARCHITECTURE_NAME:
+        module = Qwen3MoeModuleArchitecture.from_config(config)
         return ModelArchitecture(
             modules={"default": ModuleDefinition(architecture=module)},
             architectures=[arch_name],
@@ -44,11 +56,13 @@ def arch_info_for_config(config: PretrainedConfig) -> Optional[ModelArchitecture
         for c in candidates:
             if c.expected_model_type == config.model_type:
                 return c
-        logger.warning(
+        LOG.warning(
             f"Multiple architectures for {arch_name}, none match model type {config.model_type}"
         )
 
-    logger.warning(f"No JSON architecture found for {arch_name}")
+    if arch_name not in WARNED_ARCHITECTURE_NAMES:
+        LOG.warning(f"No JSON architecture found for {arch_name}")
+        WARNED_ARCHITECTURE_NAMES.add(arch_name)
     return None
 
 
@@ -73,7 +87,7 @@ def get_architecture_info(
         return model_arch_info[0]
 
     # try to infer from all models
-    return infer_architecture_info(models, config.base_model, options)
+    return infer_architecture_info(tuple(models), config.base_model, options)
 
 
 __all__ = [
